@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#78a9f7">
+  <title>Daily Study Planner — With Motivation & Progress</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #6b7280;
+      --paper: #fbfcfe;
+      --dot: #d5dae2;
+      --board: #78a9f7;
+      --todo: #72cc80;
+      --next: #ff7070;
+      --card-blue: #68d0e7;
+      --card-yellow: #ffd96a;
+      --card-coral: #ffa69c;
+      --card-orange: #ffc36d;
+      --card-purple: #cda4f4;
+      --card-green: #7edb9a;
+      --shadow: 0 8px 20px rgba(43, 56, 74, .10);
+      --radius: 8px;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --primary: #3b82f6;
+      --daily-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --motivation-text: #4b5563;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: var(--paper);
+      background-image: radial-gradient(circle, var(--dot) 1.15px, transparent 1.2px);
+      background-size: 16px 16px;
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 3px solid #24364f;
+      outline-offset: 2px;
+    }
+
+    .app { width: min(1200px, 100%); margin: 0 auto; padding: 22px 24px 38px; }
+    .topbar { display: flex; align-items: center; gap: 18px; margin: 0 8px 18px; }
+    .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+    .brand h1 {
+      margin: 0;
+      font: 800 clamp(1.7rem, 3vw, 2.6rem)/1 "Segoe UI", sans-serif;
+      letter-spacing: -.05em;
+    }
+    .daily-info { display: flex; gap: 16px; align-items: center; margin-left: auto; }
+    .date-display { padding: 8px 16px; background: rgba(255, 255, 255, .92); border-radius: 8px; font-weight: 700; color: var(--primary); }
+    .streak-counter { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(255, 255, 255, .92); border-radius: 8px; }
+    .streak-value { font-weight: 800; color: var(--warning); }
+    .streak-icon { font-size: 1.2rem; }
+
+    .daily-container { display: grid; grid-template-columns: 350px 1fr; gap: 24px; margin-top: 30px; }
+    @media (max-width: 1100px) {
+      .daily-container { grid-template-columns: 1fr; }
+    }
+
+    .left-panel { display: flex; flex-direction: column; gap: 20px; }
+
+    .daily-card {
+      background: var(--daily-bg);
+      border-radius: var(--radius);
+      padding: 30px;
+      color: white;
+      box-shadow: var(--shadow);
+    }
+    .daily-header { text-align: center; margin-bottom: 25px; }
+    .daily-title { font-size: 1.8rem; font-weight: 800; margin: 0 0 8px 0; }
+    .daily-subtitle { opacity: .9; font-size: 1.1rem; }
+    .progress-section { margin-bottom: 25px; }
+    .progress-bar { height: 12px; background: rgba(255, 255, 255, .3); border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+    .progress-fill { height: 100%; background: var(--success); border-radius: 6px; transition: width .3s ease; }
+    .progress-text { font-size: .9rem; opacity: .9; }
+
+    .quote-card {
+      background: rgba(255, 255, 255, .95);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .quote-text {
+      font-style: italic;
+      color: var(--motivation-text);
+      margin-bottom: 15px;
+      line-height: 1.6;
+      font-size: 1.05rem;
+    }
+    .quote-author {
+      font-weight: 700;
+      color: var(--primary);
+      text-align: right;
+      font-size: .95rem;
+    }
+    .quote-refresh {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: transform .2s ease;
+    }
+    .quote-refresh:hover { transform: rotate(90deg); }
+
+    .task-list-container {
+      background: rgba(255, 255, 255, .95);
+      border-radius: var(--radius);
+      padding: 25px;
+      box-shadow: var(--shadow);
+    }
+    .task-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    .task-title { font-size: 1.4rem; font-weight: 800; color: var(--primary); }
+    .task-counter { font-size: .9rem; color: var(--muted); background: #f3f4f6; padding: 4px 12px; border-radius: 20px; }
+
+    .task-input-section {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+      flex-wrap: wrap;
+    }
+    .task-input {
+      flex: 1;
+      min-width: 200px;
+      padding: 12px 16px;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color .2s ease;
+    }
+    .task-input:focus { border-color: var(--primary); outline: none; }
+    .add-task-btn {
+      padding: 12px 24px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s ease;
+      box-shadow: 0 4px 0 rgba(59, 130, 246, .3);
+    }
+    .add-task-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 rgba(59, 130, 246, .3); }
+    .add-task-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(59, 130, 246, .3); }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 15px;
+      background: #f9fafb;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border-left: 4px solid var(--muted);
+      transition: all .2s ease;
+      position: relative;
+    }
+    .task-item:hover { transform: translateX(5px); box-shadow: 0 4px 10px rgba(0, 0, 0, .1); }
+    .task-item.completed {
+      background: #f0fdf4;
+      border-left-color: var(--success);
+      opacity: .8;
+    }
+    .task-item.completed .task-text { text-decoration: line-through; color: var(--muted); }
+
+    .task-checkbox {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #d1d5db;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all .2s ease;
+      flex-shrink: 0;
+    }
+    .task-checkbox:hover { border-color: var(--primary); }
+    .task-checkbox.checked {
+      background: var(--success);
+      border-color: var(--success);
+    }
+    .task-checkbox.checked::after {
+      content: '✓';
+      color: white;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 8px 12px;
+      border-radius: 6px;
+      transition: background .2s ease;
+    }
+    .task-text:hover { background: rgba(59, 130, 246, .1); }
+    .task-text:focus {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+
+    .task-delete {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      border-radius: 6px;
+      padding: 6px 10px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all .2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+    }
+    .task-delete:hover {
+      background: #dc2626;
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .empty-icon { font-size: 3rem; margin-bottom: 15px; opacity: .5; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .stat-card {
+      background: rgba(255, 255, 255, .9);
+      border-radius: 8px;
+      padding: 15px 8px;
+      min-width: 0;
+      overflow: hidden;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .1);
+    }
+    .stat-value {
+      font-size: clamp(1.3rem, 4.5vw, 1.8rem);
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stat-label {
+      font-size: .78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .02em;
+      line-height: 1.3;
+    }
+
+    .theme-selector {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(255, 255, 255, .9);
+      border-radius: 8px;
+    }
+    .theme-title {
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: var(--primary);
+    }
+    .theme-colors {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .theme-color {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all .2s ease;
+    }
+    .theme-color:hover { transform: scale(1.1); }
+    .theme-color.selected { border-color: #333; transform: scale(1.15); }
+
+    /* ---- Day tabs for the daily to-do list ---- */
+    .day-tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .day-tab {
+      flex: 1;
+      min-width: 88px;
+      padding: 10px 12px;
+      border: 2px solid #d1d5db;
+      border-radius: 8px;
+      background: #fff;
+      cursor: pointer;
+      text-align: center;
+      transition: all .2s ease;
+    }
+    .day-tab:hover { border-color: var(--primary); transform: translateY(-1px); }
+    .day-tab.today { border-color: var(--success); }
+    .day-tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .day-tab .day-name { display: block; font-weight: 800; font-size: .85rem; }
+    .day-tab .day-date { display: block; font-size: .68rem; opacity: .8; margin-top: 2px; }
+    .day-tab.today .day-date { color: var(--success); font-weight: 800; }
+    .day-tab.active.today .day-date { color: #fff; opacity: .9; }
+    .day-count {
+      display: inline-block;
+      margin-left: 4px;
+      border-radius: 999px;
+      background: rgba(23, 32, 42, .12);
+      padding: 1px 6px;
+      font: 800 .62rem/1 Consolas, monospace;
+    }
+    .day-tab.active .day-count { background: rgba(255, 255, 255, .3); }
+
+    /* ---- IELTS Academic skills: daily homework targets ---- */
+    .ielts-section { margin: 30px 0 10px; }
+    .ielts-header {
+      text-align: center;
+      padding: 30px;
+      background: linear-gradient(135deg, var(--ielts-blue), var(--ielts-green));
+      border-radius: var(--radius);
+      color: white;
+      margin-bottom: 30px;
+    }
+    .ielts-header h1 { margin: 0 0 10px 0; font-size: 2rem; }
+    .ielts-header p { margin: 0; font-size: 1.1rem; opacity: .9; }
+    .homework-header { text-align: center; margin: 40px 0 25px; }
+    .homework-header h2 { margin: 0 0 8px; font-size: 1.8rem; color: var(--primary); }
+    .homework-header p { margin: 0; color: var(--muted); font-size: 1.02rem; }
+    .homework-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: 18px; margin-bottom: 25px; }
+    .homework-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+      border-top: 4px solid var(--ielts-blue);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: background .2s ease;
+    }
+    .homework-card.reading { border-top-color: var(--ielts-blue); }
+    .homework-card.writing { border-top-color: var(--ielts-green); }
+    .homework-card.listening { border-top-color: var(--ielts-orange); }
+    .homework-card.speaking { border-top-color: var(--ielts-red); }
+    .homework-card.completed { background: #f0fdf4; }
+    .homework-card.completed .homework-name { color: var(--success); text-decoration: line-through; }
+    .homework-icon { font-size: 2rem; }
+    .homework-name { font-size: 1.2rem; font-weight: 800; }
+    .homework-target { color: var(--muted); font-size: .9rem; line-height: 1.5; flex: 1; }
+    .homework-done {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: .9rem;
+      cursor: pointer;
+      padding-top: 10px;
+      border-top: 1px solid #eef1f5;
+    }
+    .homework-done input { width: 18px; height: 18px; accent-color: var(--success); cursor: pointer; }
+    .homework-progress { max-width: 560px; margin: 0 auto; background: white; border-radius: var(--radius); padding: 18px 22px; box-shadow: var(--shadow); }
+    .homework-progress .progress-bar { background: #eef1f5; }
+    .homework-progress .progress-text { color: var(--muted); }
+
+    @media (max-width: 620px) {
+      .daily-container { grid-template-columns: 1fr; }
+      .task-input-section { flex-direction: column; }
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span>📚</span>
+        <h1>Daily Study Planner</h1>
+      </div>
+      <div class="daily-info">
+        <div class="date-display" id="dateDisplay"></div>
+        <div class="streak-counter">
+          <span class="streak-icon">🔥</span>
+          <span class="streak-value" id="streakValue">0</span>
+          <span>day streak</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="daily-container">
+      <div class="left-panel">
+        <div class="daily-card">
+          <div class="daily-header">
+            <div class="daily-title">Good Morning!</div>
+            <div class="daily-subtitle">Your focused learning session starts now</div>
+          </div>
+          <div class="progress-section">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text">Today's Progress: <span id="completedCount">0</span> of <span id="totalTasks">6</span> tasks completed</div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="completedValue">0</div>
+              <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="remainingValue">6</div>
+              <div class="stat-label">Remaining</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="completionRate">0%</div>
+              <div class="stat-label">Success Rate</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="quote-card">
+          <button class="quote-refresh" onclick="refreshQuote()">⟲</button>
+          <div class="quote-text" id="quoteText">Loading inspirational quote...</div>
+          <div class="quote-author" id="quoteAuthor">- Loading -</div>
+        </div>
+
+        <div class="theme-selector">
+          <div class="theme-title">🎨 Theme Colors</div>
+          <div class="theme-colors">
+            <div class="theme-color" style="background: #667eea" onclick="setTheme('daily')" title="Blue Theme"></div>
+            <div class="theme-color" style="background: #f093fb" onclick="setTheme('purple')" title="Purple Theme"></div>
+            <div class="theme-color" style="background: #4facfe" onclick="setTheme('sky')" title="Sky Theme"></div>
+            <div class="theme-color" style="background: #43e97b" onclick="setTheme('green')" title="Green Theme"></div>
+            <div class="theme-color selected" style="background: #667eea" id="currentThemeColor" onclick="setTheme('daily')" title="Current Theme"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="task-list-container">
+        <div class="task-header">
+          <div class="task-title">📝 Daily Tasks (Max 6 per day)</div>
+          <div class="task-counter" id="taskCounter">0/6 tasks</div>
+        </div>
+
+        <div class="day-tabs" id="dayTabs" aria-label="Pick a day"></div>
+
+        <div class="task-input-section">
+          <input type="text" class="task-input" id="taskInput" placeholder="Add a new task (up to 6)..." maxlength="100">
+          <button class="add-task-btn" onclick="addTask()">Add Task</button>
+        </div>
+
+        <div id="taskList">
+          <!-- Tasks will be dynamically added here -->
+          <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <div>No tasks added yet. Start by adding your first task above!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ielts-section">
+      <div class="ielts-header">
+        <h1>🎯 IELTS Academic Skills — Daily Homework Target</h1>
+        <p>Complete each skill's daily homework to stay on track for band 7.0+ · roughly 2 hours a day</p>
+      </div>
+      <div class="homework-grid">
+        <div class="homework-card reading" data-skill="reading">
+          <div class="homework-icon">📖</div>
+          <div class="homework-name">Academic Reading</div>
+          <div class="homework-target">40 min · 1 Academic passage (3 question sets) + 10 academic vocabulary words</div>
+          <label class="homework-done"><input type="checkbox" onchange="toggleHomework('reading', this.checked)"> Done today</label>
+        </div>
+        <div class="homework-card writing" data-skill="writing">
+          <div class="homework-icon">✍️</div>
+          <div class="homework-name">Academic Writing</div>
+          <div class="homework-target">30 min · Task 1 data description or Task 2 essay paragraph, then review the sample answer</div>
+          <label class="homework-done"><input type="checkbox" onchange="toggleHomework('writing', this.checked)"> Done today</label>
+        </div>
+        <div class="homework-card listening" data-skill="listening">
+          <div class="homework-icon">🎧</div>
+          <div class="homework-name">Listening</div>
+          <div class="homework-target">30 min · One full section (Questions 1–10) under exam conditions + transcript review</div>
+          <label class="homework-done"><input type="checkbox" onchange="toggleHomework('listening', this.checked)"> Done today</label>
+        </div>
+        <div class="homework-card speaking" data-skill="speaking">
+          <div class="homework-icon">🗣️</div>
+          <div class="homework-name">Speaking</div>
+          <div class="homework-target">20 min · Record a 2-minute Part 2 answer + fluency and pronunciation drills</div>
+          <label class="homework-done"><input type="checkbox" onchange="toggleHomework('speaking', this.checked)"> Done today</label>
+        </div>
+      </div>
+      <div class="homework-progress">
+        <div class="progress-bar">
+          <div class="progress-fill" id="homeworkFill"></div>
+        </div>
+        <div class="progress-text">Daily IELTS homework: <span id="homeworkCount">0</span> of 4 skills completed</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Initialize app
+    const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    function weekdayKey(date) { return DAY_NAMES[(date.getDay() + 6) % 7]; }
+    let tasks = [];
+    let currentStreak = 0;
+    let selectedDay = weekdayKey(new Date());
+    let motivationalQuotes = [
+      { text: "The expert in anything was once a beginner.", author: "Helen Hayes" },
+      { text: "Small progress is still progress.", author: "Unknown" },
+      { text: "Consistency is the key to success.", author: "Unknown" },
+      { text: "Your future is created by what you do today, not tomorrow.", author: "Robert Kiyosaki" },
+      { text: "The journey of a thousand miles begins with a single step.", author: "Lao Tzu" },
+      { text: "Don't wait for the perfect moment. Take the moment and make it perfect.", author: "Zig Ziglar" },
+      { text: "Discipline is the bridge between goals and accomplishment.", author: "Jim Rohn" },
+      { text: "Success is the sum of small efforts repeated day in and day out.", author: "Robert Collier" },
+      { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+      { text: "Your limitation is your imagination.", author: "Unknown" }
+    ];
+
+    // Set today's date
+    function updateDateDisplay() {
+      const today = new Date();
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('dateDisplay').textContent = today.toLocaleDateString('en-US', options);
+    }
+
+    // Update streak
+    function updateStreak() {
+      const today = new Date().toDateString();
+      const lastLogin = localStorage.getItem('lastLoginDate');
+      const savedStreak = localStorage.getItem('studyStreak');
+
+      if (lastLogin === today) {
+        currentStreak = parseInt(savedStreak) || 0;
+      } else {
+        currentStreak = (lastLogin ? parseInt(savedStreak) || 0 : 0) + 1;
+        localStorage.setItem('lastLoginDate', today);
+      }
+
+      localStorage.setItem('studyStreak', currentStreak.toString());
+      document.getElementById('streakValue').textContent = currentStreak;
+    }
+
+    // Load saved tasks
+    function loadTasks() {
+      const savedTasks = localStorage.getItem('dailyPlannerTasks');
+      if (savedTasks) {
+        tasks = JSON.parse(savedTasks);
+        // Migrate old tasks that only had a date onto a weekday key
+        tasks.forEach(task => {
+          if (!task.day) {
+            const d = task.date ? new Date(task.date) : new Date();
+            task.day = weekdayKey(d);
+          }
+        });
+      }
+      renderTasks();
+      renderDayTabs();
+    }
+
+    // Save tasks
+    function saveTasks() {
+      localStorage.setItem('dailyPlannerTasks', JSON.stringify(tasks));
+      updateUI();
+    }
+
+    // Add new task
+    function addTask() {
+      const input = document.getElementById('taskInput');
+      const taskText = input.value.trim();
+      
+      if (!taskText) return;
+      
+      if (tasks.filter(t => t.day === selectedDay).length >= 6) {
+        alert('You can only have up to 6 tasks per day! Complete some tasks first.');
+        return;
+      }
+
+      const task = {
+        id: Date.now(),
+        text: taskText,
+        completed: false,
+        day: selectedDay,
+        created: Date.now()
+      };
+
+      tasks.push(task);
+      saveTasks();
+      input.value = '';
+      renderTasks();
+    }
+
+    // Toggle task completion
+    function toggleTask(id) {
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.completed = !task.completed;
+        saveTasks();
+      }
+    }
+
+    // Delete task
+    function deleteTask(id) {
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasks();
+    }
+
+    // Edit task text
+    function editTask(id, newText) {
+      const task = tasks.find(t => t.id === id);
+      if (task && newText.trim()) {
+        task.text = newText.trim();
+        saveTasks();
+      }
+    }
+
+    // Render tasks for the selected day
+    function renderTasks() {
+      const taskList = document.getElementById('taskList');
+      
+      const dayTasks = tasks.filter(t => t.day === selectedDay);
+
+      if (dayTasks.length === 0) {
+        taskList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📝</div>
+            <div>No tasks for ${selectedDay}. Start by adding your first task above!</div>
+          </div>
+        `;
+        return;
+      }
+
+      taskList.innerHTML = dayTasks.map(task => `
+        <div class="task-item ${task.completed ? 'completed' : ''}" onclick="toggleTask(${task.id})">
+          <div class="task-checkbox ${task.completed ? 'checked' : ''}"></div>
+          <div class="task-text" contenteditable="true" onblur="handleTaskEdit(event, ${task.id})" onkeypress="handleTaskKeyPress(event, ${task.id})">${task.text}</div>
+          <button class="task-delete" onclick="event.stopPropagation(); deleteTask(${task.id})" title="Delete task">🗑️</button>
+        </div>
+      `).join('');
+    }
+
+    // Handle task editing
+    function handleTaskEdit(event, id) {
+      if (event.relatedTarget?.classList?.contains('task-delete')) {
+        return; // Don't edit if clicking delete button
+      }
+      const newText = event.target.textContent.trim();
+      if (newText) {
+        editTask(id, newText);
+      }
+    }
+
+    // Handle task key press (Enter to save)
+    function handleTaskKeyPress(event, id) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        event.target.blur();
+      }
+    }
+
+    // Update UI (progress always reflects today; counter reflects selected day)
+    function updateUI() {
+      const todayKey = weekdayKey(new Date());
+      const todayTasks = tasks.filter(t => t.day === todayKey);
+      const selectedTasks = tasks.filter(t => t.day === selectedDay);
+      const completedCount = todayTasks.filter(t => t.completed).length;
+      const totalTasks = todayTasks.length;
+      const completionRate = totalTasks > 0 ? Math.round((completedCount / totalTasks) * 100) : 0;
+      
+      document.getElementById('completedCount').textContent = completedCount;
+      document.getElementById('totalTasks').textContent = totalTasks;
+      document.getElementById('completedValue').textContent = completedCount;
+      document.getElementById('remainingValue').textContent = totalTasks - completedCount;
+      document.getElementById('completionRate').textContent = completionRate + '%';
+      document.getElementById('taskCounter').textContent = selectedTasks.length + '/6 tasks';
+      
+      const progressPercent = completionRate;
+      document.getElementById('progressFill').style.width = progressPercent + '%';
+      
+      // Update streak if tasks completed today
+      if (completedCount > 0) {
+        updateStreak();
+      }
+    }
+
+    // Refresh quote
+    function refreshQuote() {
+      const randomIndex = Math.floor(Math.random() * motivationalQuotes.length);
+      const quote = motivationalQuotes[randomIndex];
+      document.getElementById('quoteText').textContent = quote.text;
+      document.getElementById('quoteAuthor').textContent = '- ' + quote.author;
+    }
+
+    // Set theme
+    function setTheme(themeName) {
+      const colors = {
+        daily: { primary: '#3b82f6', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+        purple: { primary: '#9333ea', background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' },
+        sky: { primary: '#0ea5e9', background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' },
+        green: { primary: '#10b981', background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' }
+      };
+      
+      const color = colors[themeName];
+      document.documentElement.style.setProperty('--primary', color.primary);
+      document.querySelector('.daily-card').style.background = color.background;
+      
+      // Update selected theme indicator
+      document.querySelectorAll('.theme-color').forEach(el => el.classList.remove('selected'));
+      document.getElementById('currentThemeColor').classList.add('selected');
+    }
+
+    // Day tabs: Monday through Sunday for the to-do list
+    function weekDates() {
+      const today = new Date();
+      const offset = (today.getDay() + 6) % 7; // 0 = Monday
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - offset);
+      return DAY_NAMES.map((name, i) => {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        return { key: name, date: d };
+      });
+    }
+
+    function renderDayTabs() {
+      const tabs = document.getElementById('dayTabs');
+      if (!tabs) return;
+      const todayKey = weekdayKey(new Date());
+      tabs.innerHTML = weekDates().map(day => {
+        const active = day.key === selectedDay ? ' active' : '';
+        const isToday = day.key === todayKey ? ' today' : '';
+        const remaining = tasks.filter(t => t.day === day.key && !t.completed).length;
+        const badge = remaining > 0 ? `<span class="day-count">${remaining}</span>` : '';
+        const name = day.key + (isToday ? ' · Today' : '');
+        return `<button type="button" class="day-tab${active}${isToday}" data-day="${day.key}" onclick="selectDay('${day.key}')" aria-pressed="${active ? 'true' : 'false'}">
+          <span class="day-name">${name}</span>
+          <span class="day-date">${day.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>${badge}
+        </button>`;
+      }).join('');
+    }
+
+    function selectDay(day) {
+      selectedDay = day;
+      renderDayTabs();
+      renderTasks();
+      updateUI();
+    }
+
+    // IELTS Academic skills — daily homework targets (saved per calendar date)
+    const HOMEWORK_KEY_PREFIX = 'ieltsHomework-';
+    function homeworkStorageKey() { return HOMEWORK_KEY_PREFIX + new Date().toDateString(); }
+    function loadHomework() {
+      try {
+        return { reading: false, writing: false, listening: false, speaking: false, ...JSON.parse(localStorage.getItem(homeworkStorageKey()) || '{}') };
+      } catch { return { reading: false, writing: false, listening: false, speaking: false }; }
+    }
+    function toggleHomework(skill, checked) {
+      const data = loadHomework();
+      data[skill] = !!checked;
+      localStorage.setItem(homeworkStorageKey(), JSON.stringify(data));
+      renderHomework();
+    }
+    function renderHomework() {
+      const data = loadHomework();
+      document.querySelectorAll('.homework-card').forEach(card => {
+        const box = card.querySelector('.homework-done input');
+        if (box) box.checked = !!data[card.dataset.skill];
+        card.classList.toggle('completed', !!data[card.dataset.skill]);
+      });
+      const done = Object.values(data).filter(Boolean).length;
+      const countEl = document.getElementById('homeworkCount');
+      const fill = document.getElementById('homeworkFill');
+      if (countEl) countEl.textContent = done;
+      if (fill) fill.style.width = Math.round((done / 4) * 100) + '%';
+    }
+
+    // Initialize the app
+    function init() {
+      updateDateDisplay();
+      updateStreak();
+      loadTasks();
+      refreshQuote();
+      renderDayTabs();
+      renderHomework();
+      updateUI();
+      
+      // Set up keyboard shortcuts
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && document.activeElement === document.getElementById('taskInput')) {
+          e.preventDefault();
+          addTask();
+        }
+      });
+    }
+
+    // Start the app
+    init();
+  </script>
+</body>
+</html>

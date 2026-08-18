@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#78a9f7">
+  <title>IELTS Study Planner — Academic Preparation</title>
+  <style>
+    :root {
+      --ink: #17202a;
+      --muted: #6b7280;
+      --paper: #fbfcfe;
+      --dot: #d5dae2;
+      --board: #78a9f7;
+      --todo: #72cc80;
+      --next: #ff7070;
+      --card-blue: #68d0e7;
+      --card-yellow: #ffd96a;
+      --card-coral: #ffa69c;
+      --card-orange: #ffc36d;
+      --card-purple: #cda4f4;
+      --card-green: #7edb9a;
+      --shadow: 0 8px 20px rgba(43, 56, 74, .10);
+      --radius: 8px;
+      --ielts-blue: #0074b7;
+      --ielts-red: #e62e00;
+      --ielts-green: #009a3e;
+      --ielts-orange: #ed8b00;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      font-family: "Segoe UI", Arial, sans-serif;
+      background-color: var(--paper);
+      background-image: radial-gradient(circle, var(--dot) 1.15px, transparent 1.2px);
+      background-size: 16px 16px;
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { color: inherit; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 3px solid #24364f;
+      outline-offset: 2px;
+    }
+
+    .app { width: min(1600px, 100%); margin: 0 auto; padding: 22px 24px 38px; }
+    .topbar { display: flex; align-items: center; gap: 18px; margin: 0 8px 18px; }
+    .brand { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+    .brand h1 {
+      margin: 0;
+      font: 800 clamp(1.7rem, 3vw, 2.6rem)/1 "Segoe UI", sans-serif;
+      letter-spacing: -.05em;
+    }
+    .ielts-nav { display: flex; gap: 12px; margin-left: auto; }
+    .ielts-nav button {
+      padding: 8px 14px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .92);
+      border: 1px solid #c5ccd6;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 0 rgba(23, 32, 42, .08);
+      transition: all .15s ease;
+    }
+    .ielts-nav button:hover { background: #fff; transform: translateY(-1px); }
+    .ielts-nav button.active { background: var(--ielts-blue); color: white; border-color: var(--ielts-blue); }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(740px, 5fr) minmax(185px, 1.12fr) minmax(185px, 1.12fr);
+      gap: 16px;
+      align-items: stretch;
+    }
+    .group { min-width: 0; }
+    .group-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 35px;
+      padding: 0 10px 8px;
+    }
+    .group-title h2 { margin: 0; font-size: 1.24rem; letter-spacing: -.025em; }
+    .group-title span { color: var(--muted); font: 700 .68rem/1 Consolas, monospace; text-transform: uppercase; letter-spacing: .08em; }
+    .week-shell, .single-shell { border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); min-height: 590px; }
+    .week-shell { background: var(--board); }
+    .single-shell.academic { background: linear-gradient(135deg, var(--ielts-blue), var(--ielts-green)); color: white; }
+    .single-shell.practice { background: linear-gradient(135deg, var(--ielts-red), var(--ielts-orange)); color: white; }
+    .single-shell.resources { background: linear-gradient(135deg, #7c3aed, #ec4899); color: white; }
+
+    .column {
+      display: flex;
+      flex-direction: column;
+      min-height: 562px;
+      overflow: hidden;
+      border: 1px solid rgba(34, 49, 69, .13);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, .94);
+    }
+    .column-head { padding: 11px 9px 8px; text-align: center; }
+    .column-name {
+      display: block;
+      overflow: hidden;
+      border: 0;
+      border-bottom: 1px solid #68717b;
+      background: transparent;
+      padding: 0 2px 5px;
+      font: 700 1rem/1.1 "Segoe Print", "Comic Sans MS", cursive;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .column-date { margin-top: 6px; color: #1673d8; font: 800 .63rem/1 Consolas, monospace; letter-spacing: .05em; }
+    .cards { flex: 1; display: flex; flex-direction: column; gap: 9px; padding: 6px 7px 12px; }
+    .empty-hint { display: none; margin: auto; color: #8b949e; text-align: center; font-size: .74rem; line-height: 1.35; }
+    .cards:empty::after { content: "Drop a note here"; margin: auto; color: #9aa2ad; font-size: .73rem; }
+
+    .card {
+      --card: var(--ielts-blue);
+      position: relative;
+      min-height: 76px;
+      border: 0;
+      border-radius: 1px;
+      background: var(--card);
+      padding: 14px 10px 18px;
+      box-shadow: 0 3px 7px rgba(25, 32, 42, .13);
+      cursor: grab;
+      transition: transform .15s ease, box-shadow .15s ease, opacity .15s ease;
+    }
+    .card:hover { transform: rotate(-.35deg) translateY(-2px); box-shadow: 0 7px 12px rgba(25, 32, 42, .18); }
+    .card.dragging { opacity: .35; cursor: grabbing; }
+
+    .card-title { margin: 0; padding-right: 9px; font-size: .74rem; line-height: 1.35; font-weight: 800; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .card-meta { position: absolute; right: 8px; bottom: 6px; left: 9px; display: flex; justify-content: space-between; color: rgba(20,30,40,.58); font: 600 .53rem/1 Consolas, monospace; }
+    .card.done { filter: grayscale(.5); opacity: .62; }
+    .card.done .card-title { text-decoration: line-through; }
+
+    .quick-add { display: flex; align-items: center; gap: 6px; border-top: 1px solid #d8dde5; padding: 8px 7px; background: rgba(255,255,255,.92); }
+    .quick-add input { width: 100%; min-width: 0; border: 0; background: transparent; padding: 4px 2px; font-size: .7rem; }
+    .quick-add button { flex: 0 0 auto; width: 22px; height: 22px; border: 1px solid #bdc4cd; border-radius: 4px; background: #fff; padding: 0; cursor: pointer; }
+
+    .single-shell .column { min-height: 562px; background: rgba(255,255,255,.91); }
+    .single-shell .column-head { display: flex; align-items: center; justify-content: space-between; min-height: 45px; text-align: left; }
+    .single-shell .column-name { border: 0; font-family: "Segoe UI", sans-serif; font-size: .83rem; font-weight: 800; }
+    .count { border-radius: 999px; background: rgba(23,32,42,.08); padding: 4px 7px; font: 800 .62rem/1 Consolas, monospace; }
+
+    .menu { position: relative; }
+    .menu-panel {
+      position: absolute;
+      z-index: 20;
+      top: 46px;
+      right: 0;
+      width: 230px;
+      display: none;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      border: 1px solid #c9d0d9;
+      border-radius: 10px;
+      background: #fff;
+      padding: 10px;
+      box-shadow: 0 14px 34px rgba(23,32,42,.2);
+    }
+    .menu-panel.open { display: grid; }
+    .menu-panel button { text-align: left; box-shadow: none; }
+
+    dialog {
+      width: min(470px, calc(100% - 28px));
+      border: 1px solid #aeb7c2;
+      border-radius: 13px;
+      background: #fff;
+      padding: 0;
+      color: var(--ink);
+      box-shadow: 0 24px 80px rgba(15,23,42,.28);
+    }
+    dialog::backdrop { background: rgba(24,35,50,.34); backdrop-filter: blur(2px); }
+    .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 8px; }
+    .modal-head h3 { margin: 0; font-size: 1.35rem; letter-spacing: -.03em; }
+    .modal-head button { border: 0; background: transparent; font-size: 1.25rem; cursor: pointer; }
+    .modal-body { display: grid; gap: 13px; padding: 10px 20px 18px; }
+    .field { display: grid; gap: 6px; }
+    .field label { color: #4b5563; font-size: .76rem; font-weight: 800; }
+    .field input, .field textarea, .field select { width: 100%; border: 1px solid #bfc7d1; border-radius: 7px; background: #fff; padding: 9px 10px; }
+    .field textarea { min-height: 104px; resize: vertical; }
+    .modal-actions { display: flex; justify-content: space-between; gap: 8px; padding: 14px 20px 20px; border-top: 1px solid #e4e8ed; }
+    .modal-actions .right { display: flex; gap: 8px; margin-left: auto; }
+    .modal-actions .primary { border-color: #286fd1; background: #377edc; color: #fff; }
+    .modal-actions .delete { border-color: #efb0aa; color: #b42318; }
+    .help { margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.5; }
+    .toast { position: fixed; z-index: 50; right: 20px; bottom: 20px; transform: translateY(20px); border-radius: 8px; background: #17202a; color: #fff; padding: 11px 15px; font-weight: 700; opacity: 0; pointer-events: none; transition: .2s ease; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+    .ielts-section { margin-bottom: 40px; }
+    .ielts-header { text-align: center; padding: 30px; background: linear-gradient(135deg, var(--ielts-blue), var(--ielts-green)); border-radius: var(--radius); color: white; margin-bottom: 30px; }
+    .ielts-header h1 { margin: 0 0 10px 0; font-size: 2.5rem; }
+    .ielts-header p { margin: 0; font-size: 1.2rem; opacity: .9; }
+
+    .section-tabs { display: flex; gap: 10px; margin-bottom: 30px; }
+    .tab { padding: 12px 24px; border: 1px solid #c5ccd6; background: rgba(255, 255, 255, .92); border-radius: 8px; cursor: pointer; font-weight: 700; }
+    .tab.active { background: var(--ielts-blue); color: white; border-color: var(--ielts-blue); }
+
+    .scores-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+    .score-card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); text-align: center; }
+    .score-card.ielts { border-top: 4px solid var(--ielts-blue); }
+    .score-card.reading { border-top: 4px solid var(--ielts-green); }
+    .score-card.writing { border-top: 4px solid var(--ielts-red); }
+    .score-card.speaking { border-top: 4px solid var(--ielts-orange); }
+    .score-card.value { border-top: 4px solid #7c3aed; }
+    .score-label { color: var(--muted); font-size: .9rem; margin-bottom: 5px; }
+    .score-value { font-size: 2rem; font-weight: 800; }
+    .score-target { color: var(--ielts-blue); font-size: .9rem; }
+
+    .resources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+    .resource-card { background: white; border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+    .resource-card.ielts { border-left: 4px solid var(--ielts-blue); }
+    .resource-card.speaking { border-left: 4px solid var(--ielts-red); }
+    .resource-card.writing { border-left: 4px solid var(--ielts-green); }
+    .resource-card.value { border-left: 4px solid #7c3aed; }
+    .resource-icon { font-size: 2rem; margin-bottom: 10px; }
+    .resource-title { font-weight: 800; margin-bottom: 10px; }
+    .resource-desc { color: var(--muted); font-size: .9rem; margin-bottom: 15px; }
+    .resource-link { color: var(--ielts-blue); font-weight: 700; text-decoration: none; }
+
+    .calculator { background: white; border-radius: var(--radius); padding: 30px; box-shadow: var(--shadow); }
+    .calc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .calc-input { display: grid; gap: 8px; }
+    .calc-label { color: var(--muted); font-size: .9rem; }
+    .calc-field { padding: 10px; border: 1px solid #d0d5dd; border-radius: 6px; font-size: 1.1rem; }
+    .calc-result { background: #f0f9ff; border-radius: 8px; padding: 20px; margin-top: 20px; text-align: center; }
+    .calc-main { font-size: 2rem; font-weight: 800; color: var(--ielts-blue); }
+
+    @media (max-width: 1100px) {
+      .ielts-nav { order: 3; width: 100%; justify-content: center; margin-top: 10px; }
+      .ielts-nav button { flex: 1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span>🎓</span>
+        <h1>IELTS Study Planner</h1>
+      </div>
+      <div class="ielts-nav">
+        <button class="active" onclick="switchTab('academic')">Academic Modules</button>
+        <button onclick="switchTab('practice')">Practice Tests</button>
+        <button onclick="switchTab('resources')">Study Resources</button>
+      </div>
+    </header>
+
+    <div id="academicTab" class="ielts-section">
+      <div class="ielts-header">
+        <h1>Academic English Preparation</h1>
+        <p>Master the skills needed for IELTS Academic modules: Reading, Writing, Listening, Speaking</p>
+      </div>
+
+      <div class="scores-grid">
+        <div class="score-card ielts">
+          <div class="score-label">Overall Band Target</div>
+          <div class="score-value">7.0</div>
+          <div class="score-target">IELTS 7.0+ Required</div>
+        </div>
+        <div class="score-card reading">
+          <div class="score-label">Reading Band</div>
+          <div class="score-value">6.5</div>
+          <div class="score-target">Goal: 7.0</div>
+        </div>
+        <div class="score-card writing">
+          <div class="score-label">Writing Band</div>
+          <div class="score-value">6.0</div>
+          <div class="score-target">Goal: 7.5</div>
+        </div>
+        <div class="score-card speaking">
+          <div class="score-label">Speaking Band</div>
+          <div class="score-value">6.5</div>
+          <div class="score-target">Goal: 7.0</div>
+        </div>
+        <div class="score-card value">
+          <div class="score-label">Listening Band</div>
+          <div class="score-value">6.5</div>
+          <div class="score-target">Goal: 7.5</div>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <div class="group week-group">
+          <div class="group-title"><h2>Academic Reading</h2><span>develop speed & comprehension</span></div>
+          <div class="single-shell academic"><div id="readingColumn"></div></div>
+        </div>
+        <div class="group">
+          <div class="group-title"><h2>Academic Writing</h2><span>task 1 & 2 practice</span></div>
+          <div class="single-shell writing"><div id="writingColumn"></div></div>
+        </div>
+        <div class="group">
+          <div class="group-title"><h2>Listening Practice</h2><span>lecture notes & recordings</span></div>
+          <div class="single-shell practice"><div id="listeningColumn"></div></div>
+        </div>
+      </div>
+
+      <div class="ielts-section">
+        <h2 style="text-align: center; margin: 40px 0 20px;">IELTS Band Score Calculator</h2>
+        <div class="calculator">
+          <div class="calc-row">
+            <div class="calc-input">
+              <label class="calc-label">Reading Score (0-40)</label>
+              <input type="number" class="calc-field" id="readingScore" min="0" max="40" placeholder="0-40" oninput="calculateIELTS()">
+            </div>
+            <div class="calc-input">
+              <label class="calc-label">Writing Score (0-40)</label>
+              <input type="number" class="calc-field" id="writingScore" min="0" max="40" placeholder="0-40" oninput="calculateIELTS()">
+            </div>
+          </div>
+          <div class="calc-row">
+            <div class="calc-input">
+              <label class="calc-label">Listening Score (0-40)</label>
+              <input type="number" class="calc-field" id="listeningScore" min="0" max="40" placeholder="0-40" oninput="calculateIELTS()">
+            </div>
+            <div class="calc-input">
+              <label class="calc-label">Speaking Score (0-40)</label>
+              <input type="number" class="calc-field" id="speakingScore" min="0" max="40" placeholder="0-40" oninput="calculateIELTS()">
+            </div>
+          </div>
+          <div class="calc-result">
+            <div class="calc-label">Estimated Overall Band</div>
+            <div class="calc-main" id="ieltsResult">0.0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="practiceTab" class="ielts-section" style="display:none;">
+      <div class="ielts-header" style="background: linear-gradient(135deg, var(--ielts-red), var(--ielts-orange));">
+        <h1>Practice Test Center</h1>
+        <p>Full-length practice tests with timed conditions</p>
+      </div>
+
+      <div class="resources-grid">
+        <div class="resource-card ielts">
+          <div class="resource-icon">📝</div>
+          <div class="resource-title">Full Practice Test - Academic</div>
+          <div class="resource-desc">Complete 3-hour timed test with all sections and answer key</div>
+          <a href="#" class="resource-link">Start Practice Test →</a>
+        </div>
+        <div class="resource-card speaking">
+          <div class="resource-icon">🗣️</div>
+          <div class="resource-title">IELTS Speaking Mock Test</div>
+          <div class="resource-desc">10-minute speaking assessment with evaluator feedback</div>
+          <a href="#" class="resource-link">Start Speaking →</a>
+        </div>
+        <div class="resource-card writing">
+          <div class="resource-icon">✍️</div>
+          <div class="resource-title">Writing Task Practice</div>
+          <div class="resource-desc">20-minute timed writing tasks with sample answers</div>
+          <a href="#" class="resource-link">Start Writing →</a>
+        </div>
+        <div class="resource-card value">
+          <div class="resource-icon">🎧</div>
+          <div class="resource-title">Listening Comprehension</div>
+          <div class="resource-desc">30-minute listening section with transcripts</div>
+          <a href="#" class="resource-link">Start Listening →</a>
+        </div>
+      </div>
+
+      <div class="ielts-section">
+        <h2 style="text-align: center; margin: 40px 0 20px;">Timed Practice Settings</h2>
+        <div class="calculator">
+          <div class="calc-row">
+            <div class="calc-input">
+              <label class="calc-label">Test Type</label>
+              <select class="calc-field">
+                <option>Academic Reading</option>
+                <option>Academic Writing</option>
+                <option>Listening</option>
+                <option>Speaking</option>
+              </select>
+            </div>
+            <div class="calc-input">
+              <label class="calc-label">Duration (minutes)</label>
+              <select class="calc-field">
+                <option>20</option>
+                <option>30</option>
+                <option>40</option>
+                <option>60</option>
+              </select>
+            </div>
+          </div>
+          <button class="calc-field primary" style="width: 100%; padding: 15px; font-size: 1.1rem; cursor: pointer;">Start Practice Test</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="resourcesTab" class="ielts-section" style="display:none;">
+      <div class="ielts-header" style="background: linear-gradient(135deg, #7c3aed, #ec4899);">
+        <h1>IELTS Study Resources</h1>
+        <p>Essential materials and tools for IELTS success</p>
+      </div>
+
+      <div class="resources-grid">
+        <div class="resource-card ielts">
+          <div class="resource-icon">📚</div>
+          <div class="resource-title">Official Guide</div>
+          <div class="resource-desc">Complete IELTS preparation book with practice tests</div>
+          <a href="#" class="resource-link">View Details →</a>
+        </div>
+        <div class="resource-card speaking">
+          <div class="resource-icon">🎬</div>
+          <div class="resource-title">Video Lessons</div>
+          <div class="resource-desc">IELTS speaking techniques with expert tutors</div>
+          <a href="#" class="resource-link">Watch Videos →</a>
+        </div>
+        <div class="resource-card writing">
+          <div class="resource-icon">📖</div>
+          <div class="resource-title">Vocabulary Lists</div>
+          <div class="resource-desc">Academic word lists for each band score</div>
+          <a href="#" class="resource-link">Browse Words →</a>
+        </div>
+        <div class="resource-card value">
+          <div class="resource-icon">🧮</div>
+          <div class="resource-title">Formula Calculator</div>
+          <div class="resource-desc">IELTS band calculation and score estimation</div>
+          <a href="#" class="resource-link">Open Calculator →</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <dialog id="ieltsTaskDialog">
+    <form id="ieltsTaskForm">
+      <div class="modal-head"><h3 id="ieltsTaskModalTitle">Add IELTS Task</h3><button type="button" data-close aria-label="Close">×</button></div>
+      <div class="modal-body">
+        <div class="field"><label for="ieltsTaskText">Task description</label><textarea id="ieltsTaskText" required maxlength="500"></textarea></div>
+        <div class="form-row">
+          <div class="field"><label for="ieltsTaskModule">Module</label><select id="ieltsTaskModule">
+            <option value="reading">Reading</option>
+            <option value="writing">Writing</option>
+            <option value="listening">Listening</option>
+            <option value="speaking">Speaking</option>
+          </select></div>
+          <div class="field"><label for="ieltsTaskDifficulty">Difficulty</label><select id="ieltsTaskDifficulty">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label for="ieltsTaskTime">Time allocation (minutes)</label><input id="ieltsTaskTime" type="number" min="1" max="120"></div>
+          <div class="field"><label for="ieltsTaskPriority">Priority</label><select id="ieltsTaskPriority">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select></div>
+        </div>
+      </div>
+      <div class="modal-actions"><button id="ieltsDeleteTask" class="delete" type="button">Delete</button><div class="right"><button type="button" data-close>Cancel</button><button class="primary" type="submit">Save task</button></div></div>
+    </form>
+  </dialog>
+
+  <input id="ieltsImportFile" class="sr-only" type="file" accept="application/json">
+  <div id="ieltsToast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = 'ielts-study-planner-v1';
+
+      const modules = {
+        reading: { name: 'Academic Reading', color: '#0074b7', icon: '📖' },
+        writing: { name: 'Academic Writing', color: '#009a3e', icon: '✍️' },
+        listening: { name: 'Listening Practice', color: '#e62e00', icon: '🎧' },
+        speaking: { name: 'Speaking Practice', color: '#ed8b00', icon: '🗣️' }
+      };
+
+      const difficultyColors = {
+        easy: '#009a3e',
+        medium: '#ed8b00',
+        hard: '#e62e00'
+      };
+
+      let state = {
+        weekLabel: 'Week of Sep 9 – 15',
+        startDate: '2026-09-08',
+        columnNames: {
+          'day-0': 'Monday',
+          'day-1': 'Tuesday',
+          'day-2': 'Wednesday',
+          'day-3': 'Thursday',
+          'day-4': 'Friday',
+          'day-5': 'Saturday',
+          'todo': 'To dos',
+          'next': 'Next week'
+        },
+        theme: { board: '#78a9f7', todo: '#72cc80', next: '#ff7070', paper: '#fbfcfe' },
+        tasks: [],
+        scores: {
+          reading: 25,
+          writing: 20,
+          listening: 25,
+          speaking: 22
+        }
+      };
+
+      function calculateIELTS() {
+        const reading = parseFloat(document.getElementById('readingScore').value) || 0;
+        const writing = parseFloat(document.getElementById('writingScore').value) || 0;
+        const listening = parseFloat(document.getElementById('listeningScore').value) || 0;
+        const speaking = parseFloat(document.getElementById('speakingScore').value) || 0;
+
+        const overall = ((reading/40*9) + (writing/40*9) + (listening/40*8) + (speaking/40*8)) / 4;
+        document.getElementById('ieltsResult').textContent = overall.toFixed(1);
+      }
+
+      function switchTab(tabName) {
+        document.querySelectorAll('.ielts-section').forEach(tab => tab.style.display = 'none');
+        document.querySelectorAll('.ielts-nav button').forEach(btn => btn.classList.remove('active'));
+
+        if (tabName === 'academic') {
+          document.getElementById('academicTab').style.display = 'block';
+          document.querySelector('.ielts-nav button:nth-child(1)').classList.add('active');
+        } else if (tabName === 'practice') {
+          document.getElementById('practiceTab').style.display = 'block';
+          document.querySelector('.ielts-nav button:nth-child(2)').classList.add('active');
+        } else if (tabName === 'resources') {
+          document.getElementById('resourcesTab').style.display = 'block';
+          document.querySelector('.ielts-nav button:nth-child(3)').classList.add('active');
+        }
+      }
+
+      function load() {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) {
+            state = { ...state, ...JSON.parse(saved) };
+          }
+        } catch (e) {
+          console.error('Failed to load state:', e);
+        }
+      }
+
+      function save() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      function esc(value='') {
+        const d=document.createElement('div');
+        d.textContent=value;
+        return d.innerHTML;
+      }
+
+      function dateFor(index) {
+        const d = new Date(`${state.startDate}T12:00:00`);
+        d.setDate(d.getDate() + index);
+        return d.toLocaleDateString(undefined,{month:'short',day:'2-digit'}).toUpperCase();
+      }
+
+      function columnHTML(col, index, single = false) {
+        const items = state.tasks.filter(t => t.column === col.id);
+        const editable = !single;
+        return `<section class="column" data-column="${col.id}" aria-label="${esc(state.columnNames[col.id] || col.name)}">
+          <header class="column-head">
+            <span class="column-name" ${editable ? 'contenteditable="true" role="textbox" tabindex="0"' : ''} data-name-for="${col.id}">${esc(state.columnNames[col.id] || col.name)}</span>
+            ${single ? `<span class="count">${items.length}</span>` : `<div class="column-date">${dateFor(index)}</div>`}
+          </header>
+          <div class="cards">${items.map(cardHTML).join('')}</div>
+          <form class="quick-add" data-add-to="${col.id}"><button type="submit" aria-label="Add note">＋</button><input aria-label="Quick add a note" placeholder="Type in a to do item" maxlength="500"></form>
+        </section>`;
+      }
+
+      function cardHTML(t) {
+        const module = modules[t.module] || modules.writing;
+        return `<article class="card" style="--card: ${module.color};" draggable="true" tabindex="0" data-id="${t.id}" data-module="${t.module}" aria-label="${esc(t.text)}. Press Enter to edit.">
+          <p class="card-title">${module.icon} ${esc(t.text)}</p>
+          <div class="card-meta"><span>${t.difficulty} • ${t.time}m</span><span>${t.priority} priority</span></div>
+        </article>`;
+      }
+
+      function render() {
+        document.getElementById('weekLabel').value = state.weekLabel || '';
+        applyTheme();
+
+        const readingColumn = document.getElementById('readingColumn');
+        if (readingColumn) {
+          readingColumn.innerHTML = `<section class="column">
+            <header class="column-head">
+              <span class="column-name">📖 Academic Reading</span>
+              <span class="count">${state.tasks.filter(t => t.module === 'reading').length}</span>
+            </header>
+            <div class="cards">${state.tasks.filter(t => t.module === 'reading').map(cardHTML).join('')}</div>
+          </section>`;
+        }
+
+        const writingColumn = document.getElementById('writingColumn');
+        if (writingColumn) {
+          writingColumn.innerHTML = `<section class="column">
+            <header class="column-head">
+              <span class="column-name">✍️ Academic Writing</span>
+              <span class="count">${state.tasks.filter(t => t.module === 'writing').length}</span>
+            </header>
+            <div class="cards">${state.tasks.filter(t => t.module === 'writing').map(cardHTML).join('')}</div>
+          </section>`;
+        }
+
+        const listeningColumn = document.getElementById('listeningColumn');
+        if (listeningColumn) {
+          listeningColumn.innerHTML = `<section class="column">
+            <header class="column-head">
+              <span class="column-name">🎧 Listening Practice</span>
+              <span class="count">${state.tasks.filter(t => t.module === 'listening').length}</span>
+            </header>
+            <div class="cards">${state.tasks.filter(t => t.module === 'listening').map(cardHTML).join('')}</div>
+          </section>`;
+        }
+
+        populateColumnSelect();
+        bindDynamicEvents();
+      }
+
+      function applyTheme() {
+        const root = document.documentElement.style;
+        root.setProperty('--board', state.theme.board);
+        root.setProperty('--todo', state.theme.todo);
+        root.setProperty('--next', state.theme.next);
+        root.setProperty('--paper', state.theme.paper);
+      }
+
+      function populateColumnSelect() {
+        document.getElementById('ieltsTaskModule').innerHTML = Object.entries(modules).map(([key, value]) => `<option value="${key}">${value.name}</option>`).join('');
+      }
+
+      function bindDynamicEvents() {
+        document.querySelectorAll('.quick-add').forEach(form => form.addEventListener('submit', e => {
+          e.preventDefault();
+          const input=form.querySelector('input');
+          const text=input.value.trim();
+          if(!text) return;
+          state.tasks.push({
+            id: Date.now(),
+            column: form.dataset.addTo,
+            text,
+            module: 'reading',
+            difficulty: 'medium',
+            time: 30,
+            priority: 'medium',
+            done: false,
+            created: Date.now()
+          });
+          save();
+          render();
+          toast('IELTS task added');
+        }));
+
+        document.querySelectorAll('.card').forEach(card => {
+          card.addEventListener('click', () => openIELSTask(card.dataset.id));
+          card.addEventListener('keydown', e => { if(e.key==='Enter' || e.key===' '){ e.preventDefault(); openIELSTask(card.dataset.id); } });
+        });
+
+        document.querySelectorAll('[data-name-for]').forEach(el => {
+          el.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); el.blur(); } });
+          el.addEventListener('blur', () => {
+            const value=el.textContent.trim();
+            state.columnNames[el.dataset.nameFor]=value || columns.find(c=>c.id===el.dataset.nameFor).name;
+            save();
+            render();
+          });
+        });
+      }
+
+      const ieltsTaskDialog = document.getElementById('ieltsTaskDialog');
+      let activeIELTSTaskId = null;
+
+      function openIELSTask(id = null) {
+        activeIELTSTaskId = id;
+        const t = state.tasks.find(x=>x.id===id);
+        document.getElementById('ieltsTaskModalTitle').textContent = t ? 'Edit IELTS task' : 'Add IELTS task';
+        document.getElementById('ieltsTaskText').value = t?.text || '';
+        document.getElementById('ieltsTaskModule').value = t?.module || 'reading';
+        document.getElementById('ieltsTaskDifficulty').value = t?.difficulty || 'medium';
+        document.getElementById('ieltsTaskTime').value = t?.time || 30;
+        document.getElementById('ieltsTaskPriority').value = t?.priority || 'medium';
+        document.getElementById('ieltsDeleteTask').hidden = !t;
+        ieltsTaskDialog.showModal();
+        setTimeout(()=>document.getElementById('ieltsTaskText').focus(),0);
+      }
+
+      document.getElementById('ieltsTaskForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const text=document.getElementById('ieltsTaskText').value.trim();
+        if(!text) return;
+
+        const values = {
+          text,
+          module: document.getElementById('ieltsTaskModule').value,
+          difficulty: document.getElementById('ieltsTaskDifficulty').value,
+          time: parseInt(document.getElementById('ieltsTaskTime').value) || 30,
+          priority: document.getElementById('ieltsTaskPriority').value
+        };
+
+        if(activeIELTSTaskId) {
+          Object.assign(state.tasks.find(t=>t.id===activeIELTSTaskId), values);
+        } else {
+          state.tasks.push({...values, id: Date.now(), done: false, created: Date.now()});
+        }
+
+        save();
+        ieltsTaskDialog.close();
+        render();
+        toast(activeIELTSTaskId ? 'IELTS task saved' : 'IELTS task added');
+      });
+
+      document.getElementById('ieltsDeleteTask').addEventListener('click', () => {
+        if(!activeIELTSTaskId) return;
+        state.tasks = state.tasks.filter(t => t.id !== activeIELTSTaskId);
+        save();
+        ieltsTaskDialog.close();
+        render();
+        toast('IELTS task deleted');
+      });
+
+       document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>ieltsTaskDialog.close()));
+
+       const menuPanel = document.getElementById('menuPanel'), menuToggle = document.getElementById('menuToggle');
+       if(menuToggle && menuPanel) {
+        menuToggle.addEventListener('click',()=>{
+          const open = menuPanel.classList.toggle('open');
+          menuToggle.setAttribute('aria-expanded',String(open));
+        });
+
+        document.addEventListener('click',e=>{
+          if(!e.target.closest('.menu')){
+            menuPanel.classList.remove('open');
+            menuToggle.setAttribute('aria-expanded','false');
+          }
+        });
+      }
+
+      const themeButton = document.getElementById('themeButton');
+      if(themeButton) {
+        themeButton.addEventListener('click',()=>{
+          alert('Theme customization would open here');
+        });
+      }
+
+const addIELTSTaskButton = document.createElement('button');
+       addIELTSTaskButton.textContent = '+ Add IELTS Task';
+       addIELTSTaskButton.style.position = 'fixed';
+       addIELTSTaskButton.style.bottom = '20px';
+       addIELTSTaskButton.style.right = '20px';
+       addIELTSTaskButton.style.background = '#0074b7';
+       addIELTSTaskButton.style.color = 'white';
+       addIELTSTaskButton.style.border = 'none';
+       addIELTSTaskButton.style.borderRadius = '8px';
+       addIELTSTaskButton.style.padding = '15px 25px';
+       addIELTSTaskButton.style.fontWeight = '700';
+       addIELTSTaskButton.style.cursor = 'pointer';
+       addIELTSTaskButton.style.boxShadow = '0 8px 20px rgba(43, 56, 74, .10)';
+       addIELTSTaskButton.addEventListener('click',()=>openIELSTask());
+       document.body.appendChild(addIELTSTaskButton);
+
+      let toastTimer;
+      function toast(message){
+        const el=document.getElementById('ieltsToast');
+        el.textContent=message;
+        el.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer=setTimeout(()=>el.classList.remove('show'),1800);
+      }
+
+      load();
+      render();
+    })();
+  </script>
+</body>
+</html>
